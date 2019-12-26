@@ -1,24 +1,57 @@
 
+~o.stopAllNotes;
+~o.clearAllRegs;
+
 
 // start with organ solo
+~o.note(0,1,30,127);
+
+~o.note(0,1,30,0);
+~o.note(0,1,31,127);
+
+~o.note(0,1,31,0);
+~o.note(0,1,30,127);
+
+~o.note(0,1,30,0);
+~o.note(0,1,35,127);
+
+~o.note(0,1,35,0);
+~o.note(0,1,31,127);
+
+~o.note(0,1,31,0);
+~o.note(0,1,30,127);
+
 // vary registers
-~bo.note(0,1,30,127);
-
-~bo.note(0,1,30,0);
-~bo.note(0,1,31,127);
-
-~bo.note(0,1,31,0);
-~bo.note(0,1,30,127);
-
-~bo.note(0,1,30,0);
-~bo.note(0,1,35,127);
-
-~bo.note(0,1,35,0);
-~bo.note(0,1,31,127);
-
-~bo.note(0,1,31,0);
-~bo.note(0,1,30,127);
-
+Pdef(\organRegs).play;
+(
+a = ~o.p;
+b = ~o.hw;
+c = ~o.sp;
+d = ~o.sw;
+Pdef(\organRegs, {
+	Pbind(
+		\amp, 0,
+		\dur, Pseq([1.1, 0.9, 0.95, 1.1].normalizeSum * 5, inf),
+//		\dur, Pseq([1.1, 0.9, 0.4, 0.45, 1.1].normalizeSum * 5, inf), // boom durations
+// 		\dur, Pseq([
+// 			Pwrand([Pwhite(0.5, 1.0, 1), Pwhite(0.2, 0.05, Pstutter(Pwhite(4, 12, 1), 1))], [0.8, 0.2], 1),
+// 			Pwhite(0.5, 0.6, 1)
+// 		], inf),
+		\reg1, Prand(a, inf), // registers pedals
+		\reg2, Prand(b, inf), // registers man I
+		\reg3, Prand(c, inf), // registers man II
+		\reg4, Prand(d, inf), // registers man III
+		\bo, Pfunc { |e|
+			// ~o.noteLen(1, e[\reg1], 127, e[\dur] * 0.99);
+			~o.reg(0, 1, e[\reg1]);
+			~o.reg(1, 1, e[\reg2]);
+			~o.reg(2, 1, e[\reg3]);
+			~o.reg(3, 1, e[\reg4]);
+		},
+	)
+});
+)
+Pdef(\organRegs).stop;
 
 // a gritty drone // multichannel expansion, amplitude modulation
 // first only base
@@ -40,10 +73,9 @@ Ndef(\dron1, {
 	sig
 });
 )
-Ndef(\dron1).release
+Ndef(\dron1).stop
 
-
-~bo.note(0,1,30,0);
+~o.note(0,1,30,0);
 Pdef(\organ1).play;
 // first only base and no jitter
 (
@@ -65,56 +97,20 @@ Pdef(\organ1, {
 		\freq4, Prand([~base, ~base + 1, ~base + 5], inf),
 		// \freq1, Prand([~base, ~base + 1, ~base + 5], inf),
 		\bo, Pfunc { |e|
-			var freq1 = e[\freq1];
-			var freq2 = e[\freq2];
-			var freq3 = e[\freq3];
-			var freq4 = e[\freq4];
 			var dur = e[\dur];
-			~bo.noteWithLength(0, freq1, 127, dur * 0.99);
-			~bo.noteWithLength(1, freq2, 127, dur * 0.99);
-			~bo.noteWithLength(2, freq3, 127, dur * 0.99);
-			~bo.noteWithLength(3, freq4, 127, dur * 0.99);
+			~o.noteLen(0, e[\freq1], dur * 0.99);
+			~o.noteLen(1, e[\freq2], dur * 0.99);
+			~o.noteLen(2, e[\freq3], dur * 0.99);
+			~o.noteLen(3, e[\freq4], dur * 0.99);
 		},
 	)
 });
 )
-Pdef(\organ1).release;
+Pdef(\organ1).stop;
 
 // add jitter to organ1
 // add overtones in organ1 and dron1
 // play with base
-
-// play with registers
-// slowly, but also fast with a pbind
-
-Pdef(\organRegs).play;
-(
-Pdef(\organRegs, {
-	Pbind(
-		\amp, 0,
-		\dur, Pseq([
-			Pwrand([Pwhite(0.5, 1.0, 1), Pwhite(0.2, 0.05, Pstutter(Pwhite(4, 12, 1), 1))], [0.8, 0.2], 1),
-			Pwhite(0.5, 0.6, 1)
-		], inf),
-		\reg1, Prand([1,2,3,4,5,6,7,8,9,10], inf), // registers pedals
-		\reg2, Prand([1,2,3,4,5,6,7,8,9,10], inf), // registers man I
-		\reg3, Prand([1,2,3,4,5,6,7,8,9,10], inf), // registers man II
-		\reg4, Prand([1,2,3,4,5,6,7,8,9,10], inf), // registers man III
-		\bo, Pfunc { |e|
-			var reg1 = e[\reg1];
-			var reg2 = e[\reg2];
-			var reg3 = e[\reg3];
-			var reg4 = e[\reg4];
-			~bo.reg(0, 1, reg1);
-			~bo.reg(1, 1, reg2);
-			~bo.reg(2, 1, reg3);
-			~bo.reg(3, 1, reg4);
-		},
-	)
-});
-)
-Pdef(\organRegs).stop;
-
 
 // something to create a sense of time // multichannel expansion
 (
@@ -133,13 +129,12 @@ Pdef(\boomPattern2).play;
 Pdef(\boomPattern2,
 	Pbind(
 		\instrument, \boom,
-		\dur, Pseq([1.1, 0.9, 0.4, 0.45, 1.1] * 2, inf),
+		\dur, Pseq([1.1, 0.9, 0.4, 0.45, 1.1].normalizeSum * 5, inf),
 		\level, Pseq([3,2,3] * 0.6, inf),
 	)
 );
 )
 Pdef(\boomPattern2).stop;
-
 
 ( // just a little help to load samples easier
 ~load = {
@@ -187,10 +182,10 @@ Ndef(\dron2, {
 	sig = Splay.ar(SinOscFB.ar([~base.midicps * 6, (~base + 1).midicps, (~base + 5).midicps * 3, ~base.midicps * 12], SinOsc.kr(0.1).range(0,1), mul: [1,2,1]));
 	sig = sig * LFPulse.kr(SinOsc.kr(0.3).range(5, 50));
 	// sig = sig * Impulse.kr(SinOsc.kr(0.3).range(5, 50), mul: 3);
-	sig * envGen * 0.5
+	sig * envGen * 0.3
 });
 )
-Ndef(\dron2).release
+Ndef(\dron2).stop
 
 // stop sample
 
@@ -199,19 +194,40 @@ Ndef(\dron1).release
 Pdef(\organ1).stop;
 
 // high notes with only dron2
-~bo.note(0,1,30 + 60,127);
+~o.note(0,1,30 + 60,127);
 
-~bo.note(0,1,30 + 60,0);
-~bo.note(0,1,30 + 60 + 1,127);
+~o.note(0,1,30 + 60,0);
+~o.note(0,1,30 + 60 + 1,127);
 
-~bo.note(0,1,30 + 60 + 1,0);
-~bo.note(0,1,30 + 60,127);
+~o.note(0,1,30 + 60 + 1,0);
+~o.note(0,1,30 + 60,127);
 
-~bo.note(0,1,30 + 60,0);
-~bo.note(0,1,30 + 60 + 5,127);
+~o.note(0,1,30 + 60,0);
+~o.note(0,1,30 + 60 + 5,127);
 
-~bo.note(0,1,30 + 60 + 5,0);
-~bo.note(0,1,30 + 60,127);
+~o.note(0,1,30 + 60 + 5,0);
+~o.note(0,1,30 + 60,127);
+
+Pdef(\messiaen).play;
+(
+Pdef(\messiaen, {
+	~base = 0;
+	// ~notes = ["C#2", "Bb1", "A1", "G1", "F#1", "Eb1", "D1", "C#1", "Bb0", "A0", "B0", "Bb0", "A0", "C#1", "G0"];
+	~notes = [ 49, 46, 45, 43, 42, 39, 38, 37, 34, 33, 35, 34, 33, 37, 31 ] - 1 + ~base;
+	~durs = [ 4, 4, 2, 2, 1, 4, 4, 2, 2, 1, 8, 2, 2, 3, 12].normalizeSum * 4/0.3;
+	Pbind(
+		\amp, 0,
+		\dur, Pseq(~durs, inf),
+		\freq1, Pseq(~notes, inf),
+		\bo, Pfunc { |e|
+			~o.noteLen(0, e[\freq1], e[\dur] * 0.99);
+			~o.noteLen(1, e[\freq1], e[\dur] * 0.99);
+		},
+	)
+});
+)
+Pdef(\messiaen).stop;
+
 
 
 // NOISE please
