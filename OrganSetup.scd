@@ -16,11 +16,13 @@ if (~testMode) {
 ~o.currentDir = Document.current.dir;
 ~o.sendMidi = true;
 
-~midiOutDevice = \IAC1;
+~midiOutDevice = "IAC1";
 SetMIDIOut.new();
 ~o.midiOut = ~midiOut;
 
 (Document.current.dir ++ "/Lib/Definitions.scd").load();
+
+~oscOutMonitor = 2;
 
 )
 
