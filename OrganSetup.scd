@@ -16,7 +16,7 @@ if (~testMode) {
 ~o.currentDir = Document.current.dir;
 ~o.sendMidi = true;
 
-~midiOutDevice = "IAC1";
+~midiOutDevice = "IAC1"; // MUL
 SetMIDIOut.new();
 ~o.midiOut = ~midiOut;
 

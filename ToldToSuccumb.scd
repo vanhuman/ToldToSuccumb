@@ -3,24 +3,12 @@
 // 2. testen crescendo/decrescendo
 // 3. maak subgroepen van registers die bij elkaar passen (variaties) in globale arrays
 
+// for using event type, see bottom
+
 (
 // SETUP -----------------------------------------------------------------
 
 Document.current.createBackup;
-
-~load = {
-	arg buffer;
-	Dialog.openPanel({ arg path;
-		var file = SoundFile.new();
-		var channels;
-		if (file.openRead(path)) {
-			channels = if (file.numChannels == 1, { [0,0] }, { [0,1] });
-			buffer.readChannel(path, channels: channels);
-			("Loaded:" + path.subStr(path.findBackwards("/") + 1)).postln;
-			file.close;
-		}
-	}, path: "/Users/Robert/---data---/Temp/Zaal100/");
-};
 
 ~hw = [37,38,39,40,41,42,43,44,46,47,48,51,52,57,58,59,60,61,63,64];
 ~sp = [75,76,77,78,79,80,81,82,83,84,85,86,88,92,95,96,97,98,99,100];
@@ -41,14 +29,14 @@ Document.current.createBackup;
 
 Pdef(\organNotesTest).play;
 (
-k = (30..40).mirror1;
+k = (20..40).scramble;
 Pdef(\organNotesTest, {
 	Pbind(
 		\amp, 0,
-		\dur, 1,
-		\reg1, Pseq(k, inf),
-		\bo, Pfunc { |e|
-			~o.noteLen(0, 1, e[\reg1], e[\dur] * 0.95);
+		\dur, Prand([0.5, 1, 2], inf),
+		\note1, Pseq(k, inf),
+		\bo, Pfunc { |evt|
+			~o.noteLen(0, 1, evt[\note1], evt[\dur] * 0.95);
 		},
 	)
 });
@@ -63,10 +51,10 @@ m = ~p;
 Pdef(\organRegsTest, {
 	Pbind(
 		\amp, 0,
-		\dur, l,
+		\dur, 1,
 		\reg1, Pseq(m, inf),
-		\bo, Pfunc { |e|
-			~o.reg(0, 1, e[\reg1]);
+		\bo, Pfunc { |evt|
+			~o.reg(0, 1, evt[\reg1]);
 		},
 	)
 });
@@ -102,29 +90,31 @@ Pdef(\organRegsCresc).stop;
 // STRUCTURE -----------------------------------------------------------------
 
 // start with organ solo
-~o.regAdd(0, 1, 1);
+~o.reg(0, 1, 1); // which registers? vary manually, sometimes in sync with notes
+~o.regAdd(0, 1, 2);
 
 ~o.note(0,1,30,127);
 
 ~o.note(0,1,30,0);
-~o.note(0,1,31,127);
+~o.reg(0, 1, 1);
+~o.note(0,1,32,127);
 
-~o.note(0,1,31,0);
+~o.note(0,1,32,0);
 ~o.note(0,1,30,127);
 
 ~o.note(0,1,30,0);
-~o.note(0,1,35,127);
+~o.note(0,1,36,127);
 
-~o.note(0,1,35,0);
-~o.note(0,1,31,127);
+~o.note(0,1,36,0);
+~o.note(0,1,32,127);
 
-~o.note(0,1,31,0);
+~o.note(0,1,32,0);
 ~o.note(0,1,30,127);
 
-// vary registers / play with rhythm of changes
+// vary registers: play with rhythm of changes, number of random registers
 Pdef(\organRegs).play;
 (
-a = ~p;
+a = ~p; // determine which subgroups of registers
 b = ~hw;
 c = ~sp;
 d = ~sw;
@@ -133,6 +123,10 @@ Pdef(\organRegs, {
 		\amp, 0,
 		\dur, Pwhite(10.0, 14, inf),
 		// \dur, Pseq([1.1, 0.9, 0.4, 0.45, 1.1].normalizeSum * 5, inf), // boom durations
+		// \dur, Pseq([
+		//  Pwrand([Pwhite(5, 10.0, 1), Pwhite(0.2, 0.05, Pstutter(Pwhite(4, 12, 1), 1))], [0.8, 0.2], 1),
+		// 	Pwhite(0.5, 0.6, 1)
+		// ], inf),
 		\reg1, Ptuple(Prand(a, inf)!1), // registers pedals
 		\reg2, Ptuple(Prand(b, inf)!1), // registers man I
 		\reg3, Ptuple(Prand(c, inf)!1), // registers man II
@@ -162,12 +156,12 @@ Ndef(\dron1, {
 
 	sig1 = Splay.ar(LFPulse.ar([(~base + 0).midicps * 1, ~base.midicps * 1, ~base.midicps * 1, (~base + 0).midicps * 16],
 		mul: [0.2, 0.2, 0.2, 0.2]));
-	// sig1 = Splay.ar(LFPulse.ar([(~base + 1).midicps * 15, ~base.midicps * 12, ~base.midicps * 3, (~base + 5).midicps * 16],
+	// sig1 = Splay.ar(LFPulse.ar([(~base + 2).midicps * 15, ~base.midicps * 12, ~base.midicps * 3, (~base + 6).midicps * 16],
 	sig2 = SinOsc.ar([~base.midicps, (~base + 0).midicps] * LFNoise1.kr(0.3).range(0.97, 1.03), mul: 0.7);
 	// sig2 = SinOsc.ar([~base.midicps, (~base + 5).midicps] * LFNoise1.kr(0.3).range(0.97, 1.03), mul: 0.7);
 
 	sig = sig1 + sig2 + BrownNoise.ar(0.1, mul: 0.05);
-	sig = sig * envGen * 0.8;
+	sig = sig * envGen * 0.6;
 	sig
 });
 )
@@ -185,21 +179,21 @@ Pdef(\organ1, {
 		Pseq([
 			Pwhite(10.0, 12.0, 3),
 			Pseq([
-				Pwrand([Pwhite(10.0, 12.0, 1), Pwhite(0.2, 0.05, Pstutter(Pwhite(4, 12, 1), 1))], [0.8, 0.2], 1),
+				Pwrand([Pwhite(10.0, 12.0, 1), Pwhite(0.2, 0.05, Pstutter(Pwhite(4, 12, 1), 1))], [0.5, 0.5], 1),
 				Pwhite(1, 2.0, 1)
 			], inf)
 		], 1),
-		\freq1, Prand([~base, ~base + 0, ~base + 5], inf),
-		\freq2, Prand([~base, ~base + 1, ~base + 5] + 12, inf),
-		\freq3, Prand([~base, ~base + 1, ~base + 5] + 24, inf),
-		\freq4, Prand([~base, ~base + 1, ~base + 5], inf),
+		\freq1, Prand([~base, ~base + 0, ~base + 6], inf),
+		\freq2, Prand([~base, ~base + 2, ~base + 6] + 12, inf),
+		\freq3, Prand([~base, ~base + 2, ~base + 6] + 24, inf),
+		\freq4, Prand([~base, ~base + 2, ~base + 6], inf),
 		// \freq1, Prand([~base, ~base + 1, ~base + 5], inf),
-		\bo, Pfunc { |e|
-			var dur = e[\dur];
-			~o.noteLen(0, nil, e[\freq1], dur * 0.99);
-			// ~o.noteLen(1, nil, e[\freq2], dur * 0.99);
-			// ~o.noteLen(2, nil, e[\freq3], dur * 0.99);
-			// ~o.noteLen(3, nil, e[\freq4], dur * 0.99);
+		\bo, Pfunc { |evt|
+			var dur = evt[\dur];
+			~o.noteLen(0, nil, evt[\freq1], dur * 0.99);
+			// ~o.noteLen(1, nil, evt[\freq2], dur * 0.99);
+			~o.noteLen(2, nil, evt[\freq3], dur * 0.99);
+			// ~o.noteLen(3, nil, evt[\freq4], dur * 0.99);
 		},
 	)
 });
@@ -211,6 +205,7 @@ Pdef(\organ1).stop;
 // play with base
 
 // something to create a sense of time // multichannel expansion
+// make sure register changes are in same rythm
 (
 SynthDef(\boom, {
 	arg level = 1, gate = 1;
@@ -241,7 +236,7 @@ b.free;
 b = Buffer.alloc(s, 44100 * 60, 2);
 b.read("/Users/Robert/---data---/Temp/Zaal100/ob we cannot turn back.aiff");
 )
-// ~load.(b)
+// Dialog.openPanelAndLoad(b)
 (
 Ndef(\sample, {
 	var sig2, sig, env, playhead, start, end;
@@ -260,6 +255,9 @@ Ndef(\sample).release
 Ndef(\dron1).stop
 
 Pdef(\organ1).stop;
+Pdef(\organRegs).stop;
+~o.stopAllNotes;
+~o.clearAllRegs;
 
 // a slower rhythm
 Ndef(\dron2).play.fadeTime_(0.1);
@@ -270,54 +268,96 @@ Ndef(\dron2, {
 	env = Env.rcurve(50, [0.1, 2], [0.01, 0.2]);
 	envGen = EnvGen.kr(env);
 
-	sig = Splay.ar(SinOscFB.ar([~base.midicps * 6, (~base + 1).midicps, (~base + 5).midicps * 3, ~base.midicps * 12], SinOsc.kr(0.1).range(0,1), mul: [1,2,1]));
+	sig = Splay.ar(SinOscFB.ar(
+		[~base.midicps * 6, (~base + 2).midicps, (~base + 6).midicps * 3, ~base.midicps * 12],
+		SinOsc.kr(0.1).range(0,1), mul: [1,2,1]));
 	sig = sig * LFPulse.kr(SinOsc.kr(0.3).range(5, 50));
 	// sig = sig * Impulse.kr(SinOsc.kr(0.3).range(5, 50), mul: 3);
 	sig * envGen * 0.3
 });
 )
-Ndef(\dron2).release
+Ndef(\dron2).stop
 
-Ndef(\sample).stop
 Pdef(\boomPattern2).stop;
 
 // high notes with only dron2
-~o.regAdd(1, 1, 1);
-~o.note(1,1,30 + 60,127);
+~o.reg(3, 1, 1); // find out which registers or combinations
+~o.regAdd(3, 1, 1);
 
-~o.note(1,1,30 + 60,0);
-~o.note(1,1,30 + 60 + 1,127);
+~o.note(3,1,30 + 60,127);
+Ndef(\sample).stop
 
-~o.note(1,1,30 + 60 + 1,0);
-~o.note(1,1,30 + 60,127);
+~o.note(3,1,30 + 60,0);
+~o.note(3,1,30 + 60 + 2,127);
 
-~o.note(1,1,30 + 60,0);
-~o.note(1,1,30 + 60 + 5,127);
+~o.note(3,1,30 + 60 + 2,0);
+~o.note(3,1,30 + 60,127);
 
-~o.note(1,1,30 + 60 + 5,0);
-~o.note(1,1,30 + 60,127);
+~o.note(3,1,30 + 60,0);
+~o.note(3,1,30 + 60 + 6,127);
 
+~o.note(3,1,30 + 60 + 6,0);
+~o.note(3,1,30 + 60,127);
+
+Pdef(\organRegs).play;
+(
+a = ~p; // determine which subgroups of registers
+b = ~hw;
+c = ~sp;
+d = ~sw;
+Pdef(\organRegs, {
+	Pbind(
+		\amp, 0,
+		// \dur, Pwhite(10.0, 14, inf),
+		// \dur, Pseq([1.1, 0.9, 0.4, 0.45, 1.1].normalizeSum * 5, inf), // boom durations
+		\dur, Pseq([
+		 Pwrand([Pwhite(5, 10.0, 1), Pwhite(0.2, 0.05, Pstutter(Pwhite(4, 12, 1), 1))], [0.8, 0.2], 1),
+			Pwhite(0.5, 0.6, 1)
+		], inf),
+		\reg1, Ptuple(Prand(a, inf)!3), // registers pedals
+		\reg2, Ptuple(Prand(b, inf)!1), // registers man I
+		\reg3, Ptuple(Prand(c, inf)!2), // registers man II
+		\reg4, Ptuple(Prand(d, inf)!2), // registers man III
+		\bo, Pfunc { |e|
+			e[\dur].postln;
+			~o.reg(0, 1, e[\reg1].asSet.asArray);
+			// ~o.reg(1, 1, e[\reg2].asSet.asArray);
+			// ~o.reg(2, 1, e[\reg3].asSet.asArray);
+			~o.reg(3, 1, e[\reg4].asSet.asArray);
+		},
+	)
+});
+)
+Pdef(\organRegs).stop;
+
+~o.reg(0, 1, 1); // find out which registers or combinations
+~o.regAdd(0, 1, 1);
 Pdef(\messiaen).play;
 (
 Pdef(\messiaen, {
-	~base = 0;
+	~base = -12;
 	// ~notes = ["C#2", "Bb1", "A1", "G1", "F#1", "Eb1", "D1", "C#1", "Bb0", "A0", "B0", "Bb0", "A0", "C#1", "G0"];
-	~notes = [ 49, 46, 45, 43, 42, 39, 38, 37, 34, 33, 35, 34, 33, 37, 31 ] - 1 + ~base;
-	~durs = [ 4, 4, 2, 2, 1, 4, 4, 2, 2, 1, 8, 2, 2, 3, 12].normalizeSum * 4/0.3;
+	~notes = [ 49, 46, 45, 43, 42, 39, 38, 37, 34, 33, 35, 34, 33, 37, 31 ].reverse.mirror1 - 1 + ~base;
+	// ~notes = [ 49, 46, 45, 43, 42, 39, 38, 37, 34, 33, 35, 34, 33, 37, 31 ] - 1 + ~base; // original
+	~durs = [ 4, 4, 2, 2, 1, 4, 4, 2, 2, 1, 8, 2, 2, 3, 12].scramble.normalizeSum * 4/0.3;
+	// ~durs = [ 4, 4, 2, 2, 1, 4, 4, 2, 2, 1, 8, 2, 2, 3, 12].normalizeSum * 4/0.3; // original
+	// ~durs = [ 4, 4, 2, 2, 1, 4, 4, 2, 2, 1, 8, 2, 2, 3, 120] * 4/0.3 * 0.02; // at the end
 	Pbind(
 		\amp, 0,
 		\dur, Pseq(~durs, inf),
 		\freq1, Pseq(~notes, inf),
 		\bo, Pfunc { |e|
+			e[\dur].postln;
 			~o.noteLen(0, nil, e[\freq1], e[\dur] * 0.99);
 			// ~o.noteLen(1, nil, e[\freq1], e[\dur] * 0.99);
+			// ~o.noteLen(2, nil, e[\freq1], e[\dur] * 0.99);
 		},
 	)
 });
 )
 Pdef(\messiaen).stop;
-Pdef(\messiaen).pause;
-Pdef(\messiaen).resume;
+
+// play with messiaen timing and base?
 
 // NOISE please
 Ndef(\burst).play.fadeTime_(0.1);
@@ -336,10 +376,7 @@ Ndef(\burst, {
 )
 Ndef(\burst).release
 
-// stop dron2 on burst
-Ndef(\dron2).stop
-
-//  a serene voice in there
+//  a serene voice in there - or leave out completely?
 Ndef(\sine).play.fadeTime_(1)
 (
 Ndef(\sine, {
@@ -348,11 +385,13 @@ Ndef(\sine, {
 )
 Ndef(\sine).release
 
+// in sync with messiaen
 Ndef(\massCom).play.fadeTime_(0.1);
 (
 Ndef(\massCom, {
-	var sig, env, curve, amp, freq, hasFreq, noise;
+	var sig, env, curve, amp, freq, hasFreq, noise, max;
 	~base = 30 + 12;
+	max = (~base + 2).midicps;
 	env = Env.new([
 		[(~base + 2).midicps, (~base + 2).midicps * 1.02],
 		[~base.midicps, ~base.midicps] * 1.02,
@@ -365,12 +404,18 @@ Ndef(\massCom, {
 	sig = LFSaw.ar(curve);
 	amp = thresh(Amplitude.kr(sig[0], 0.05, 0.05), 0.01);
 	# freq, hasFreq = Pitch.kr(sig[0]);
-	noise = BPF.ar(PinkNoise.ar(LFNoise1.kr(0.2).range(4,20)), freq * 32, 0.9, mul: amp).dup();
+	noise = BPF.ar(PinkNoise.ar(LFNoise1.kr(0.2).range(4,20)), max(freq, max) * 32, 0.9, mul: amp).dup();
 	sig = sig + noise;
+	sig = sig * Line.kr(0,1,60); // fade in!
 	sig * 0.2
 })
 )
 Ndef(\massCom).release;
+
+// stop dron2 on burst
+Ndef(\dron2).stop
+
+Ndef(\burst).release
 
 Ndef(\ruis).play.fadeTime_(1)
 (
@@ -386,7 +431,30 @@ Ndef(\ruis, {
 	sig
 });
 )
-Ndef(\ruis).release
+Ndef(\ruis).release;
+Ndef(\sine).release;
+Pdef(\organRegs).stop;
 
+
+
+///////////////////////////////////////////
+// // when using event type, the note on in noteLen should have a defer() - at least, for the OSC it seems, but maybe it is the OSC monitor?
+// x = ~o;
+// Event.addEventType(\organ_note, {
+// 	x.noteLen(0, 1, ~note.value, ~dur.value * 0.75);
+// });
+
+// Pdef(\organNotesTest).play;
+// (
+// k = (20..40).scramble;
+// Pdef(\organNotesTest, {
+// 	Pbind(
+// 		\type, \organ_note,
+// 		\dur, Prand([2], inf),
+// 		\note, Pseq(k, inf),
+// 	)
+// });
+// )
+// Pdef(\organNotesTest).stop;
 
 

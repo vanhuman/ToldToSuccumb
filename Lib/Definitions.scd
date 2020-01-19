@@ -29,6 +29,7 @@
 	if (val.isNil) { val = 127 };
 	force = (val / 127).round(0.001);
 	// send OSC
+	// [notes, force, chan, layer].postln;
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/V", force, *notes);
 	// send MIDI
 	if (evt.sendMidi, {
