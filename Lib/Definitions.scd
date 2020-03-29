@@ -32,15 +32,15 @@
 	// [notes, force, chan, layer].postln;
 	evt.addr.sendMsg(evt.chanLayer(chan, layer) ++ "/V", force, *notes);
 	// send MIDI
-	if (evt.sendMidi, {
-		if (notes.isInteger, {
-			evt.midiOut.noteOn(chan, notes, val);
-		}, {
-			notes.do { arg note;
-				evt.midiOut.noteOn(chan, note, val);
-			}
-		});
-	});
+	// if (evt.sendMidi, {
+	// 	if (notes.isInteger, {
+	// 		evt.midiOut.noteOn(chan, notes, val);
+	// 		}, {
+	// 			notes.do { arg note;
+	// 				evt.midiOut.noteOn(chan, note, val);
+	// 			}
+	// 	});
+	// });
 	""
 };
 
@@ -186,13 +186,17 @@
 };
 
 ~o.clearAllRegs = {
-	arg evt;
+	arg evt, layersOverride;
 	var chans = [evt.ped, evt.man1, evt.man2, evt.man3];
 	var layers;
 	chans.do { |chan|
-		layers = Array.series(evt.layersPerManual[chan], 1, 1);
+		if (layersOverride.notNil, {
+			layers = Array.series(layersOverride, 1, 1);
+		},{
+			layers = Array.series(evt.layersPerManual[chan], 1, 1);
+		});
 		if(layers.size == 0, { layers = (1..4) });
-		("Clearing all registers on manual" + chan ++ ", layer(s)" + layers.toString).warn;
+		("Clearing all registers on manual" + chan ++ ", layer(s)" + layers).warn;
 		layers.do { |layer|
 			evt.reg(chan, layer);
 		};

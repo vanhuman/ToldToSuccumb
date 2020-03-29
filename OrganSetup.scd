@@ -3,7 +3,7 @@
 // ----------------------------- Setup environment -----------------------------
 // connect with DHCP to server 192.168.0.60
 
-~testMode = true;
+~testMode = false;
 
 if(~o.notNil, { ~o.clearAll() });
 ~o = EM(); // functions in an EM always have the environment as first argument
@@ -11,14 +11,14 @@ if(~o.notNil, { ~o.clearAll() });
 if (~testMode) {
 	~o.addr = NetAddrMon.new("127.0.0.1", 8000);
 } {
-	~o.addr = NetAddrMon.new("192.168.0.1", 1803);
+	~o.addr = NetAddrMon.new("192.168.0.4", 1803);
 };
 ~o.currentDir = Document.current.dir;
-~o.sendMidi = true;
 
-~midiOutDevice = "IAC1"; // MUL
-SetMIDIOut.new();
-~o.midiOut = ~midiOut;
+// ~o.sendMidi = false;
+// ~midiOutDevice = "IAC1"; // MUL
+// SetMIDIOut.new();
+// ~o.midiOut = ~midiOut;
 
 (Document.current.dir ++ "/Lib/Definitions.scd").load();
 
@@ -197,10 +197,10 @@ SetMIDIOut.new();
 ~o.sustain(1, 1, 0.7, \off);
 
 // schwell pedal 0 is Utopa air and schwell pedal 2 is the Sauer schwellchest
-~o.sp(0, 0);
-~o.sp(0, 127);
-~o.sp(2, 0);
-~o.sp(2, 127);
+~o.sped(0, 0);
+~o.sped(0, 127);
+~o.sped(2, 0);
+~o.sped(2, 127);
 
 (
 ~pedal = 0;
@@ -215,7 +215,7 @@ SetMIDIOut.new();
 		};
 		value = value + sign;
 		value = min(127, max(0, value));
-		~o.sp(~pedal, value);
+		~o.sped(~pedal, value);
 		~pause.wait;
 	};
 }.fork;
